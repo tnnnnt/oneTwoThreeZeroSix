@@ -1,10 +1,25 @@
 import requests
 import json
+import time
 
+# 下一步更新：爬价格、过滤出发时间和到达时间
 from_station = '普宁'
 to_station_city = '深圳'
 depart_date = '2024-10-07'
-
+time_sleep = 5
+chance = 3
+headers = {
+	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0',
+	'Accept': 'application/json, text/javascript, */*; q=0.01',
+	'Accept-Encoding': 'gzip, deflate, br, zstd',
+	'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+	'Cache-Control': 'no-cache',
+	'Connection': 'keep-alive',
+	'X-Requested-With': 'XMLHttpRequest'
+}
+cookies = {
+	'JSESSIONID': ''
+}
 with open('train.json', 'r', encoding='utf-8') as file:
 	train_data = json.load(file)
 with open('city.json', 'r', encoding='utf-8') as file:
@@ -19,19 +34,21 @@ params_query_g = {
 	'leftTicketDTO.to_station': to_station_telecode,
 	'purpose_codes': 'ADULT'
 }
-cookies = {
-	'JSESSIONID': ''
-}
-response = requests.get(url_query_g, params=params_query_g, cookies=cookies)
-if response.status_code == 200:
+chance_no = 1
+while True:
 	try:
-		datas_query_g = response.json()["data"]["result"]  # 解析 JSON 数据
-	except ValueError:
-		print("无法解析 JSON 响应")
+		response = requests.get(url_query_g, headers=headers, params=params_query_g, cookies=cookies)
+		if response.status_code == 200:
+			datas_query_g = response.json()["data"]["result"]  # 解析 JSON 数据
+			break
+		else:
+			print(f"请求失败，状态码: {response.status_code}")
+	except Exception as e:
+		print(e)
+	if chance_no == chance:
 		exit()
-else:
-	print(f"请求失败，状态码: {response.status_code}")
-	exit()
+	chance_no += 1
+	time.sleep(time_sleep)
 url_query_by_train_no = "https://kyfw.12306.cn/otn/czxx/queryByTrainNo"
 possible_train_datas = {}
 for data_query_g in datas_query_g:
@@ -57,7 +74,7 @@ for data_query_g in datas_query_g:
 		'to_station_telecode': to_station_telecode,
 		'depart_date': depart_date
 	}
-	response = requests.get(url_query_by_train_no, params=params_query_by_train_no)
+	response = requests.get(url_query_by_train_no, headers=headers, params=params_query_by_train_no, cookies=cookies)
 	if response.status_code == 200:
 		try:
 			datas_station_name = response.json()['data']['data']  # 解析 JSON 数据
@@ -95,26 +112,28 @@ for k, v in possible_train_datas.items():
 		to_station_telecode_tmp = train_data[to_station_tmp]['telecode']
 		params_query_g['leftTicketDTO.from_station'] = from_station_telecode_tmp
 		params_query_g['leftTicketDTO.to_station'] = to_station_telecode_tmp
-		response = requests.get(url_query_g, params=params_query_g, cookies=cookies)
-		if response.status_code == 200:
+		chance_no = 1
+		while True:
 			try:
-				datas_query_g_tmp = response.json()["data"]["result"]  # 解析 JSON 数据
-			except ValueError:
-				print('------')
-				print("无法解析 JSON 响应")
-				print('------')
-				continue
-		else:
-			print('------')
-			print(f"请求失败，状态码: {response.status_code}")
-			print('------')
-			continue
+				response = requests.get(url_query_g, headers=headers, params=params_query_g, cookies=cookies)
+				if response.status_code == 200:
+					datas_query_g_tmp = response.json()["data"]["result"]  # 解析 JSON 数据
+					break
+				else:
+					print(f"请求失败，状态码: {response.status_code}")
+			except Exception as e:
+				print(e)
+			if chance_no == chance:
+				exit()
+			chance_no += 1
+			time.sleep(time_sleep)
 		for data_query_g_tmp in datas_query_g_tmp:
 			tmp = data_query_g_tmp.split('|')
 			train_no = tmp[2]
 			to_station_telecode = tmp[7]
 			has_tickets = tmp[11]
-			if train_no not in v['train_no_list'] or to_station_telecode != to_station_telecode_tmp or has_tickets == 'N':
+			if train_no not in v[
+				'train_no_list'] or to_station_telecode != to_station_telecode_tmp or has_tickets == 'N':
 				continue
 			train_number = tmp[3]
 			start_time = tmp[8]
