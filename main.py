@@ -2,7 +2,8 @@ import requests
 import json
 import time
 
-# 下一步更新：爬价格、过滤出发时间和到达时间
+# 下一步更新：爬价格、过滤出发时间和到达时间、实际终点
+
 from_station = '普宁'
 to_station_city = '深圳'
 depart_date = '2024-10-07'
@@ -38,11 +39,9 @@ chance_no = 1
 while True:
 	try:
 		response = requests.get(url_query_g, headers=headers, params=params_query_g, cookies=cookies)
-		if response.status_code == 200:
-			datas_query_g = response.json()["data"]["result"]  # 解析 JSON 数据
-			break
-		else:
-			print(f"请求失败，状态码: {response.status_code}")
+		response.raise_for_status()  # 如果状态码不是 200，抛出异常
+		datas_query_g = response.json()["data"]["result"]  # 解析 JSON 数据
+		break
 	except Exception as e:
 		print(e)
 	if chance_no == chance:
@@ -116,11 +115,9 @@ for k, v in possible_train_datas.items():
 		while True:
 			try:
 				response = requests.get(url_query_g, headers=headers, params=params_query_g, cookies=cookies)
-				if response.status_code == 200:
-					datas_query_g_tmp = response.json()["data"]["result"]  # 解析 JSON 数据
-					break
-				else:
-					print(f"请求失败，状态码: {response.status_code}")
+				response.raise_for_status()  # 如果状态码不是 200，抛出异常
+				datas_query_g_tmp = response.json()["data"]["result"]  # 解析 JSON 数据
+				break
 			except Exception as e:
 				print(e)
 			if chance_no == chance:
