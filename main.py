@@ -6,7 +6,7 @@ import time
 
 from_station = '普宁'
 to_station_city = '深圳'
-depart_date = '2024-10-07'
+depart_date = '2024-10-10'
 time_sleep = 5
 chance = 3
 headers = {
@@ -50,22 +50,32 @@ while True:
 	time.sleep(time_sleep)
 url_query_by_train_no = "https://kyfw.12306.cn/otn/czxx/queryByTrainNo"
 possible_train_datas = {}
+seat_type = {"A": "高级动卧", "B": "混编硬座", "C": "混编硬卧", "D": "优选一等座", "E": "特等软座", "F": "动卧", "G": "二人软包", "H": "一人软包", "I": "一等卧", "J": "二等卧", "K": "混编软座", "L": "混编软卧", "M": "一等座", "O": "二等座", "P": "特等座", "Q": "多功能座", "S": "二等包座", "W": "无座", "0": "棚车", "1": "硬座", "2": "软座", "3": "硬卧", "4": "软卧", "5": "包厢硬卧", "6": "高级软卧", "7": "一等软座", "8": "二等软座", "9": "商务座"}
 for data_query_g in datas_query_g:
 	tmp = data_query_g.split('|')
 	train_no = tmp[2]
-	train_number = tmp[3]
 	to_station_telecode = tmp[7]
-	start_time = tmp[8]
-	end_time = tmp[9]
-	duration_time = tmp[10]
 	has_tickets = tmp[11]
 	if has_tickets == 'Y':
+		train_number = tmp[3]
+		start_time = tmp[8]
+		end_time = tmp[9]
+		duration_time = tmp[10]
+		ticket_stock_and_price = tmp[39]
 		for k, v in train_data.items():
 			if v["telecode"] == to_station_telecode:
 				to_station = k
 				break
 		print('车次: {}, 出发站: {}, 到达站: {}, 出发时间: {}, 到达时间: {}, 历时: {}'.format(
 			train_number, from_station, to_station, start_time, end_time, duration_time))
+		for i in range(0, len(ticket_stock_and_price), 10):
+			t = ticket_stock_and_price[i:i+10]
+			if t[7:] != '000':
+				print(seat_type[t[0]], end='')
+				if t[6] == '3':
+					print('(无座)', end='')
+				print('\t￥'+t[1:5]+'.'+t[5]+'\t余票', end='')
+				print(t[7:]+'张')
 		continue
 	params_query_by_train_no = {
 		'train_no': train_no,
@@ -136,5 +146,14 @@ for k, v in possible_train_datas.items():
 			start_time = tmp[8]
 			end_time = tmp[9]
 			duration_time = tmp[10]
+			ticket_stock_and_price = tmp[39]
 			print('车次: {}, 出发站: {}, 到达站: {}, 出发时间: {}, 到达时间: {}, 历时: {}'.format(
 				train_number, k, to_station_tmp, start_time, end_time, duration_time))
+			for i in range(0, len(ticket_stock_and_price), 10):
+				t = ticket_stock_and_price[i:i+10]
+				if t[7:] != '000':
+					print(seat_type[t[0]], end='')
+					if t[6] == '3':
+						print('(无座)', end='')
+					print('\t￥'+t[1:5]+'.'+t[5]+'\t余票', end='')
+					print(t[7:]+'张')
